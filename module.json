@@ -1,0 +1,36 @@
+{
+  "id": "swade-optional-power-modifiers",
+  "title": "SWADE Optional Power Modifiers",
+  "description": "Optional Power Point cost reductions and No Power Points penalty buffers for SWADE, with Better Rolls 2 support.",
+  "version": "1.1.0",
+  "compatibility": {
+    "minimum": "14",
+    "verified": "14.368",
+    "maximum": "14"
+  },
+  "authors": [
+    {
+      "name": "Codex"
+    }
+  ],
+  "esmodules": [
+    "scripts/swade-optional-power-modifiers.js"
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "swade",
+        "type": "system",
+        "compatibility": {
+          "minimum": "6.0.4"
+        }
+      }
+    ],
+    "recommends": [
+      {
+        "id": "betterrolls-swade2",
+        "type": "module"
+      }
+    ]
+  }
+}
