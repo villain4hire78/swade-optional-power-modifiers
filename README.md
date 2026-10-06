@@ -4,7 +4,7 @@ Foundry VTT module for Savage Worlds Adventure Edition 6.0.4+ and Foundry VTT 14
 
 The canonical Foundry module ID and folder are `swade-optional-power-modifiers`.
 
-Version 2 uses a new module ID and new No Power Points buffer key. Update existing worlds to enable **SWADE Optional Power Modifiers**, and change prior Active Effect keys from `swade-one-power.powerPenaltyBuffer` to `swade-optional-power-modifiers.noPowerPointsPenaltyBuffer`.
+Version 2 uses a new module ID and No Power Points buffer key. Update existing worlds to enable **SWADE Optional Power Modifiers**, and change any prior buffer Active Effect to use the key listed below.
 
 ## Power Points mode choice
 
