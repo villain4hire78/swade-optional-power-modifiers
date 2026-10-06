@@ -4,6 +4,12 @@ Foundry VTT module for Savage Worlds Adventure Edition 6.0.4+ and Foundry VTT 14
 
 The canonical Foundry module ID and folder are `swade-optional-power-modifiers`.
 
+## Installation
+
+In Foundry Setup, open **Add-on Modules → Install Module**, paste the [module manifest URL](https://raw.githubusercontent.com/villain4hire78/swade-optional-power-modifiers/main/module.json), and click **Install**. Foundry will use the release download in the manifest and check/install the required Better Rolls 2 dependency.
+
+To list the module in Foundry's in-app catalog, submit it through Foundry's [Package Submission Form](https://foundryvtt.com/packages/). Catalog listing requires Foundry's review and approval.
+
 Version 2 uses a new module ID and No Power Points buffer key. Update existing worlds to enable **SWADE Optional Power Modifiers**, and change any prior buffer Active Effect to use the key listed below.
 
 ## Power Points mode choice
