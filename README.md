@@ -4,6 +4,8 @@ Foundry VTT module for Savage Worlds Adventure Edition 6.0.4+ and Foundry VTT 14
 
 The canonical Foundry module ID and folder are `swade-optional-power-modifiers`.
 
+Version 2 uses a new module ID and new No Power Points buffer key. Update existing worlds to enable **SWADE Optional Power Modifiers**, and change prior Active Effect keys from `swade-one-power.powerPenaltyBuffer` to `swade-optional-power-modifiers.noPowerPointsPenaltyBuffer`.
+
 ## Power Points mode choice
 
 When a GM enters a world, the module offers **Power Points** and **No Power Points**. Choosing either option updates the module's **No Power Points** world setting and SWADE's matching system setting together. The dialog's **Don't show this again** checkbox stores a client preference. The world setting can also be changed at **Game Settings → Configure Settings → Module Settings → SWADE Optional Power Modifiers → No Power Points**; it stays synchronized with SWADE's core setting.
