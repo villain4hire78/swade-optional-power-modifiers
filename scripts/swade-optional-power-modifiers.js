@@ -145,12 +145,11 @@ Hooks.on("brswReady", () => {
 
     const restore = [];
     const actor = brCard.actor;
-    const useNoPowerPoints = game.settings.get(MODULE_ID, "noPowerPoints");
     const useCoreNoPowerPoints = game.settings.get("swade", SWADE_NO_PP_SETTING);
 
-    if (useNoPowerPoints && useCoreNoPowerPoints) {
+    if (useCoreNoPowerPoints) {
       applyNoPowerPointsPenaltyBuffer(brCard, restore);
-    } else if (!useNoPowerPoints && !useCoreNoPowerPoints) {
+    } else {
       applyPPCostReductions(brCard, actor, restore);
     }
 
@@ -180,23 +179,13 @@ function applyNoPowerPointsPenaltyBuffer(brCard, restore) {
   for (const action of noPowerPointsActions) {
     const value = Number(action.code.skillMod);
     const reduction = Math.min(remaining, Math.abs(value));
-    adjustedValues.set(action, value + reduction);
+    adjustedValues.set(action, { action, value });
+    action.code.skillMod = value + reduction;
     remaining -= reduction;
     if (remaining <= 0) break;
   }
-
-  const originalGetSelectedActions = brCard.getSelectedActions;
-  brCard.getSelectedActions = function () {
-    return originalGetSelectedActions.call(this).map((action) => {
-      const adjustedValue = adjustedValues.get(action);
-      return adjustedValue === undefined
-        ? action
-        : { ...action, code: { ...action.code, skillMod: adjustedValue } };
-    });
-  };
   restore.push(() => {
-    if (originalGetSelectedActions) brCard.getSelectedActions = originalGetSelectedActions;
-    else delete brCard.getSelectedActions;
+    for (const { action, value } of adjustedValues.values()) action.code.skillMod = value;
   });
 }
 
