@@ -3,6 +3,7 @@ const NO_POWER_POINTS_BUFFER_KEY = "swade-optional-power-modifiers.noPowerPoints
 const MODIFIER_PP_REDUCTION_KEY = "swade-optional-power-modifiers.modifierPPCostReduction";
 const TOTAL_PP_REDUCTION_KEY = "swade-optional-power-modifiers.totalPPCostReduction";
 const SWADE_NO_PP_SETTING = "noPowerPoints";
+const PP_REDUCTION_RESTORES = Symbol("swadeOptionalPowerModifiersPPCostRestores");
 
 Hooks.once("init", () => {
   game.settings.register(MODULE_ID, "noPowerPoints", {
@@ -140,6 +141,7 @@ Hooks.on("brswReady", () => {
   const originalGetSelectedActions = cardPrototype?.getSelectedActions;
   if (typeof originalGetSelectedActions === "function" && !originalGetSelectedActions.__swadeOptionalPowerModifiersWrapped) {
     const wrappedGetSelectedActions = function (...args) {
+      installPPCostReductionOnRoll(this);
       const selected = originalGetSelectedActions.apply(this, args);
       if (!isPowerCard(this) || !game.settings.get("swade", SWADE_NO_PP_SETTING)) return selected;
 
@@ -158,30 +160,32 @@ Hooks.on("brswReady", () => {
     cardPrototype.getSelectedActions = wrappedGetSelectedActions;
   }
 
-  const brswApi = game.brsw;
-  const originalRollItem = brswApi?.rollItem;
-  if (typeof originalRollItem !== "function" || originalRollItem.__swadeOptionalPowerModifiersWrapped) return;
-
-  const wrappedRollItem = async function (brCard, ...args) {
-    if (!isPowerCard(brCard)) return originalRollItem.call(this, brCard, ...args);
-
-    const restore = [];
-    const actor = brCard.actor;
-    const useCoreNoPowerPoints = game.settings.get("swade", SWADE_NO_PP_SETTING);
-
-    if (!useCoreNoPowerPoints) {
-      applyPPCostReductions(brCard, actor, restore);
-    }
-
-    try {
-      return await originalRollItem.call(this, brCard, ...args);
-    } finally {
-      for (const callback of restore.reverse()) callback();
-    }
-  };
-  wrappedRollItem.__swadeOptionalPowerModifiersWrapped = true;
-  brswApi.rollItem = wrappedRollItem;
+  Hooks.on("BRSW-RollItem", (brCard) => {
+    restorePPCostReductions(brCard);
+  });
 });
+
+function installPPCostReductionOnRoll(brCard) {
+  const traitRoll = brCard?.traitRoll;
+  const originalAddRoll = traitRoll?.add_roll;
+  if (typeof originalAddRoll !== "function" || originalAddRoll.__swadeOptionalPowerModifiersWrapped) return;
+
+  const wrappedAddRoll = async function (...args) {
+    if (isPowerCard(brCard) && !game.settings.get("swade", SWADE_NO_PP_SETTING)) {
+      const restores = brCard[PP_REDUCTION_RESTORES] ??= [];
+      applyPPCostReductions(brCard, brCard.actor, restores);
+    }
+    return originalAddRoll.apply(this, args);
+  };
+  wrappedAddRoll.__swadeOptionalPowerModifiersWrapped = true;
+  traitRoll.add_roll = wrappedAddRoll;
+}
+
+function restorePPCostReductions(brCard) {
+  const restores = brCard?.[PP_REDUCTION_RESTORES];
+  if (!restores?.length) return;
+  for (const restore of restores.splice(0).reverse()) restore();
+}
 
 function applyPPCostReductions(brCard, actor, restore) {
   const modifierReduction = getEffectValue(actor, MODIFIER_PP_REDUCTION_KEY);
