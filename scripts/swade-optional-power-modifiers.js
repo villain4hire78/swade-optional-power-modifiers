@@ -241,7 +241,11 @@ function getModifierCost(ppModifiers) {
 
 function getEffectValue(actor, key) {
   if (!actor || !key) return 0;
-  return (actor.effects ?? []).reduce((total, effect) => {
+  const effects = new Set([
+    ...Array.from(actor.effects ?? []),
+    ...Array.from(actor.appliedEffects ?? []),
+  ]);
+  return [...effects].reduce((total, effect) => {
     if (effect.disabled || effect.isSuppressed) return total;
     const value = (effect.changes ?? [])
       .filter((change) => change.key === key)
