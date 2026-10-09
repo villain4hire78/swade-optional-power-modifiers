@@ -136,6 +136,28 @@ Hooks.on("brswReady", () => {
   module.api.getModifierPPCostReduction = (actor) => getEffectValue(actor, MODIFIER_PP_REDUCTION_KEY);
   module.api.getTotalPPCostReduction = (actor) => getEffectValue(actor, TOTAL_PP_REDUCTION_KEY);
 
+  const cardPrototype = brswCardPrototype();
+  const originalGetSelectedActions = cardPrototype?.getSelectedActions;
+  if (typeof originalGetSelectedActions === "function" && !originalGetSelectedActions.__swadeOptionalPowerModifiersWrapped) {
+    const wrappedGetSelectedActions = function (...args) {
+      const selected = originalGetSelectedActions.apply(this, args);
+      if (!isPowerCard(this) || !game.settings.get("swade", SWADE_NO_PP_SETTING)) return selected;
+
+      let remaining = getEffectValue(this.actor, getNoPowerPointsBufferKey());
+      if (remaining <= 0) return selected;
+
+      return selected.map((action) => {
+        const value = Number(action?.code?.skillMod);
+        if (!action?.code?.id?.startsWith("no_pp_") || value >= 0 || remaining <= 0) return action;
+        const reduction = Math.min(remaining, Math.abs(value));
+        remaining -= reduction;
+        return { ...action, code: { ...action.code, skillMod: value + reduction } };
+      });
+    };
+    wrappedGetSelectedActions.__swadeOptionalPowerModifiersWrapped = true;
+    cardPrototype.getSelectedActions = wrappedGetSelectedActions;
+  }
+
   const brswApi = game.brsw;
   const originalRollItem = brswApi?.rollItem;
   if (typeof originalRollItem !== "function" || originalRollItem.__swadeOptionalPowerModifiersWrapped) return;
@@ -147,9 +169,7 @@ Hooks.on("brswReady", () => {
     const actor = brCard.actor;
     const useCoreNoPowerPoints = game.settings.get("swade", SWADE_NO_PP_SETTING);
 
-    if (useCoreNoPowerPoints) {
-      applyNoPowerPointsPenaltyBuffer(brCard, restore);
-    } else {
+    if (!useCoreNoPowerPoints) {
       applyPPCostReductions(brCard, actor, restore);
     }
 
@@ -162,32 +182,6 @@ Hooks.on("brswReady", () => {
   wrappedRollItem.__swadeOptionalPowerModifiersWrapped = true;
   brswApi.rollItem = wrappedRollItem;
 });
-
-function applyNoPowerPointsPenaltyBuffer(brCard, restore) {
-  const selected = brCard.getSelectedActions?.() ?? [];
-  let remaining = getEffectValue(brCard.actor, getNoPowerPointsBufferKey());
-  const noPowerPointsActions = selected.filter((action) =>
-    action?.code?.id?.startsWith("no_pp_") && Number(action.code.skillMod) < 0,
-  );
-  remaining = Math.min(remaining, noPowerPointsActions.reduce(
-    (total, action) => total + Math.abs(Number(action.code.skillMod)),
-    0,
-  ));
-  if (remaining <= 0) return;
-
-  const adjustedValues = new Map();
-  for (const action of noPowerPointsActions) {
-    const value = Number(action.code.skillMod);
-    const reduction = Math.min(remaining, Math.abs(value));
-    adjustedValues.set(action, { action, value });
-    action.code.skillMod = value + reduction;
-    remaining -= reduction;
-    if (remaining <= 0) break;
-  }
-  restore.push(() => {
-    for (const { action, value } of adjustedValues.values()) action.code.skillMod = value;
-  });
-}
 
 function applyPPCostReductions(brCard, actor, restore) {
   const modifierReduction = getEffectValue(actor, MODIFIER_PP_REDUCTION_KEY);
@@ -262,4 +256,9 @@ function getNoPowerPointsBufferKey() {
 
 function isPowerCard(brCard) {
   return Boolean(brCard?.item && (brCard.render_data?.isPower || brCard.item.type === "power"));
+}
+
+function brswCardPrototype() {
+  const CardClass = game.brsw?.BrCommonCard;
+  return CardClass?.prototype;
 }
